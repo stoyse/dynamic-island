@@ -1,0 +1,40 @@
+import AppKit
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let spotify = SpotifyMonitor()
+    let usage = ClaudeUsageMonitor()
+    let stats = ClaudeStatsMonitor()
+    var controller: NotchController?
+    let settingsWindow = SettingsWindowController()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.accessory)   // no Dock icon, no menu bar app
+        spotify.start()
+        usage.start()
+        stats.start()
+        controller = NotchController(spotify: spotify, usage: usage, stats: stats)
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(screensChanged),
+            name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(openSettings),
+            name: .diOpenSettings, object: nil)
+    }
+
+    @objc private func openSettings() {
+        settingsWindow.show()
+    }
+
+    @objc private func screensChanged() {
+        // Debounce a touch — screen params can fire several times.
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(doReposition), object: nil)
+        perform(#selector(doReposition), with: nil, afterDelay: 0.3)
+    }
+
+    @objc private func doReposition() {
+        controller?.reposition()
+    }
+
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+}

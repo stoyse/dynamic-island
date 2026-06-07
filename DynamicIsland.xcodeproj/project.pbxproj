@@ -1,0 +1,281 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F200000000000000000000A1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A1 /* AppDelegate.swift */; };
+		F200000000000000000000A2 /* ClaudeStatsMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A2 /* ClaudeStatsMonitor.swift */; };
+		F200000000000000000000A3 /* ClaudeUsageMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A3 /* ClaudeUsageMonitor.swift */; };
+		F200000000000000000000A4 /* IslandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A4 /* IslandView.swift */; };
+		F200000000000000000000A5 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A5 /* Models.swift */; };
+		F200000000000000000000A6 /* NotchWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A6 /* NotchWindow.swift */; };
+		F200000000000000000000A7 /* SpotifyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A7 /* SpotifyMonitor.swift */; };
+		F200000000000000000000A8 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A8 /* main.swift */; };
+		F200000000000000000000A9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000A9 /* Assets.xcassets */; };
+		F200000000000000000000AC /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000AC /* AppSettings.swift */; };
+		F200000000000000000000AD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000AD /* SettingsView.swift */; };
+		F200000000000000000000AE /* Loc.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000000000000000000AE /* Loc.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F100000000000000000000A1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		F100000000000000000000A2 /* ClaudeStatsMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeStatsMonitor.swift; sourceTree = "<group>"; };
+		F100000000000000000000A3 /* ClaudeUsageMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeUsageMonitor.swift; sourceTree = "<group>"; };
+		F100000000000000000000A4 /* IslandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandView.swift; sourceTree = "<group>"; };
+		F100000000000000000000A5 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		F100000000000000000000A6 /* NotchWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchWindow.swift; sourceTree = "<group>"; };
+		F100000000000000000000A7 /* SpotifyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyMonitor.swift; sourceTree = "<group>"; };
+		F100000000000000000000A8 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		F100000000000000000000A9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F100000000000000000000AC /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		F100000000000000000000AD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F100000000000000000000AE /* Loc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loc.swift; sourceTree = "<group>"; };
+		F100000000000000000000AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Resources/Info.plist; sourceTree = "<group>"; };
+		F100000000000000000000AB /* DynamicIsland.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DynamicIsland.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F400000000000000000000C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F300000000000000000000B0 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				F300000000000000000000B1 /* Sources */,
+				F100000000000000000000A9 /* Assets.xcassets */,
+				F100000000000000000000AA /* Info.plist */,
+				F300000000000000000000B2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F300000000000000000000B1 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				F100000000000000000000A8 /* main.swift */,
+				F100000000000000000000A1 /* AppDelegate.swift */,
+				F100000000000000000000A6 /* NotchWindow.swift */,
+				F100000000000000000000A4 /* IslandView.swift */,
+				F100000000000000000000A5 /* Models.swift */,
+				F100000000000000000000A7 /* SpotifyMonitor.swift */,
+				F100000000000000000000A3 /* ClaudeUsageMonitor.swift */,
+				F100000000000000000000A2 /* ClaudeStatsMonitor.swift */,
+				F100000000000000000000AC /* AppSettings.swift */,
+				F100000000000000000000AD /* SettingsView.swift */,
+				F100000000000000000000AE /* Loc.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		F300000000000000000000B2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F100000000000000000000AB /* DynamicIsland.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F600000000000000000000E0 /* DynamicIsland */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F500000000000000000000D5 /* Build configuration list for PBXNativeTarget "DynamicIsland" */;
+			buildPhases = (
+				F400000000000000000000C0 /* Sources */,
+				F400000000000000000000C2 /* Frameworks */,
+				F400000000000000000000C1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DynamicIsland;
+			productName = DynamicIsland;
+			productReference = F100000000000000000000AB /* DynamicIsland.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F600000000000000000000E1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					F600000000000000000000E0 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = F500000000000000000000D4 /* Build configuration list for PBXProject "DynamicIsland" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F300000000000000000000B0 /* Main */;
+			productRefGroup = F300000000000000000000B2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F600000000000000000000E0 /* DynamicIsland */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F400000000000000000000C1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F200000000000000000000A9 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F400000000000000000000C0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F200000000000000000000A8 /* main.swift in Sources */,
+				F200000000000000000000A1 /* AppDelegate.swift in Sources */,
+				F200000000000000000000A6 /* NotchWindow.swift in Sources */,
+				F200000000000000000000A4 /* IslandView.swift in Sources */,
+				F200000000000000000000A5 /* Models.swift in Sources */,
+				F200000000000000000000A7 /* SpotifyMonitor.swift in Sources */,
+				F200000000000000000000A3 /* ClaudeUsageMonitor.swift in Sources */,
+				F200000000000000000000A2 /* ClaudeStatsMonitor.swift in Sources */,
+				F200000000000000000000AC /* AppSettings.swift in Sources */,
+				F200000000000000000000AD /* SettingsView.swift in Sources */,
+				F200000000000000000000AE /* Loc.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F500000000000000000000D0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F500000000000000000000D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		F500000000000000000000D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.julian.dynamicisland;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F500000000000000000000D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.julian.dynamicisland;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F500000000000000000000D4 /* Build configuration list for PBXProject "DynamicIsland" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F500000000000000000000D0 /* Debug */,
+				F500000000000000000000D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F500000000000000000000D5 /* Build configuration list for PBXNativeTarget "DynamicIsland" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F500000000000000000000D2 /* Debug */,
+				F500000000000000000000D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F600000000000000000000E1 /* Project object */;
+}
