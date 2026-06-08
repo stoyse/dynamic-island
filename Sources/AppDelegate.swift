@@ -4,15 +4,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let spotify = SpotifyMonitor()
     let usage = ClaudeUsageMonitor()
     let stats = ClaudeStatsMonitor()
+    let updater = UpdateChecker()
     var controller: NotchController?
     let settingsWindow = SettingsWindowController()
+    let onboarding = OnboardingWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)   // no Dock icon, no menu bar app
         spotify.start()
         usage.start()
         stats.start()
-        controller = NotchController(spotify: spotify, usage: usage, stats: stats)
+        updater.start()
+        controller = NotchController(spotify: spotify, usage: usage, stats: stats, updater: updater)
+
+        // First launch → show the setup screen.
+        if !AppSettings.shared.hasOnboarded {
+            onboarding.show()
+        }
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(screensChanged),

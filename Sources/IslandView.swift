@@ -24,6 +24,7 @@ struct IslandView: View {
     @ObservedObject var spotify: SpotifyMonitor
     @ObservedObject var usage: ClaudeUsageMonitor
     @ObservedObject var stats: ClaudeStatsMonitor
+    @ObservedObject var updater: UpdateChecker
     @ObservedObject var state: IslandState
     let geo: NotchGeometry
 
@@ -31,6 +32,7 @@ struct IslandView: View {
 
     /// The history bar the user tapped in the Claude detail view (nil = show summary).
     @State private var selectedDay: DailyUsage?
+    @State private var updatePulse = false
 
     // Seek-bar playback clock. The monitor polls position only every ~1.5s, so we
     // sample it and extrapolate locally for smooth movement between polls.
@@ -40,8 +42,14 @@ struct IslandView: View {
     @State private var scrubFraction: Double = 0
 
     private var islandW: CGFloat { state.expanded ? geo.expandedWidth : geo.collapsedWidth }
-    private var islandH: CGFloat { state.expanded ? geo.height(for: state.mode) : geo.collapsedHeight }
+    private var islandH: CGFloat { (state.expanded ? geo.height(for: state.mode) : geo.collapsedHeight) + bannerExtra }
     private var sideArm: CGFloat { (geo.collapsedWidth - geo.notchWidth) / 2 }
+
+    /// Extra height the expanded island gains for the update banner.
+    private var bannerExtra: CGFloat {
+        (state.expanded && updater.available != nil) ? NotchGeometry.updateBannerHeight : 0
+    }
+    private var accent: Color { settings.accentColor }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -82,6 +90,7 @@ struct IslandView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: state.expanded)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.mode)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: updater.available)
         .foregroundStyle(.white)
         .onChange(of: state.expanded) { open in if !open { selectedDay = nil } }
         .onChange(of: state.mode) { m in if m != .claude { selectedDay = nil } }
@@ -95,11 +104,32 @@ struct IslandView: View {
                 .frame(width: sideArm)
                 .padding(.trailing, 9)
             Color.clear.frame(width: geo.notchWidth)
-            HStack { usageRing(size: geo.notchHeight - 14, lineWidth: 3, showLabel: false); Spacer() }
-                .frame(width: sideArm)
-                .padding(.leading, 9)
+            HStack {
+                usageRing(size: geo.notchHeight - 14, lineWidth: 3, showLabel: false)
+                    .overlay(alignment: .topTrailing) {
+                        if updater.available != nil { collapsedUpdateBadge }
+                    }
+                Spacer()
+            }
+            .frame(width: sideArm)
+            .padding(.leading, 9)
         }
         .frame(width: geo.collapsedWidth, height: geo.notchHeight)
+    }
+
+    /// Tiny pulsing badge shown on the collapsed ring when an update is available.
+    private var collapsedUpdateBadge: some View {
+        Circle()
+            .fill(accent)
+            .frame(width: 9, height: 9)
+            .overlay(Image(systemName: "arrow.down")
+                .font(.system(size: 5.5, weight: .black)).foregroundStyle(.black))
+            .scaleEffect(updatePulse ? 1.18 : 0.9)
+            .opacity(updatePulse ? 1 : 0.65)
+            .offset(x: 2, y: -2)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) { updatePulse = true }
+            }
     }
 
     // MARK: Expanded — Music
@@ -107,6 +137,7 @@ struct IslandView: View {
     private var musicDetail: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geo.notchHeight)   // keep the physical notch clear
+            updateBanner
             HStack(spacing: 12) {
                 HStack(spacing: 11) {
                     artwork(size: 48)
@@ -150,7 +181,72 @@ struct IslandView: View {
             .padding(.bottom, 12)
             .frame(maxHeight: .infinity)
         }
-        .frame(width: geo.expandedWidth, height: geo.musicHeight)
+        .frame(width: geo.expandedWidth, height: geo.musicHeight + bannerExtra)
+    }
+
+    // MARK: Update banner (expanded)
+
+    @ViewBuilder private var updateBanner: some View {
+        if let info = updater.available {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(accent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Update available", "Update verfügbar"))
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(bannerSubtitle(info))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                bannerAction(info)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: NotchGeometry.updateBannerHeight)
+            .background(
+                LinearGradient(colors: [accent.opacity(0.20), accent.opacity(0.06)],
+                               startPoint: .leading, endPoint: .trailing))
+            .overlay(Rectangle().fill(.white.opacity(0.07)).frame(height: 1), alignment: .bottom)
+        }
+    }
+
+    private func bannerSubtitle(_ info: UpdateInfo) -> String {
+        switch updater.state {
+        case .idle:               return "v\(info.version) · " + L("one click to update", "ein Klick zum Aktualisieren")
+        case .downloading(let p): return L("Downloading…", "Lädt…") + " \(Int(p * 100))%"
+        case .installing:         return L("Installing… the app will restart", "Installiere… die App startet neu")
+        case .failed(let m):      return m
+        }
+    }
+
+    @ViewBuilder private func bannerAction(_ info: UpdateInfo) -> some View {
+        switch updater.state {
+        case .downloading(let p):
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.15)).frame(width: 90, height: 6)
+                Capsule().fill(accent).frame(width: max(6, 90 * CGFloat(p)), height: 6)
+            }
+        case .installing:
+            ProgressView().controlSize(.small)
+        default:
+            Button(action: { updater.installUpdate() }) {
+                Text(isFailedState ? L("Retry", "Erneut") : L("Update now", "Jetzt aktualisieren"))
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(accent))
+                    .shadow(color: accent.opacity(0.5), radius: 8, y: 3)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var isFailedState: Bool {
+        if case .failed = updater.state { return true } else { return false }
     }
 
     private var controlsRow: some View {
@@ -279,6 +375,7 @@ struct IslandView: View {
     private var claudeDetail: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geo.notchHeight)
+            updateBanner
             VStack(alignment: .leading, spacing: 9) {
                 HStack(alignment: .top, spacing: 10) {
                     backButton
@@ -317,7 +414,7 @@ struct IslandView: View {
             .padding(.bottom, 12)
             .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(width: geo.expandedWidth, height: geo.claudeHeight)
+        .frame(width: geo.expandedWidth, height: geo.claudeHeight + bannerExtra)
     }
 
     private var backButton: some View {

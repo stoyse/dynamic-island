@@ -20,6 +20,15 @@ DMG="$(ls -t dist/*.dmg 2>/dev/null | head -1)"
 [ -n "$DMG" ] && [ -f "$DMG" ] || { echo "✗ Kein DMG in dist/ gefunden"; exit 1; }
 echo "› Release $TAG mit Artefakt: $DMG"
 
+# 2b) Build a notarized .app ZIP for the in-app auto-updater.
+#     The DMG submission already notarized the app; staple it so the swapped
+#     app launches offline too, then zip with ditto (preserves the bundle).
+xcrun stapler staple "$APP" 2>/dev/null || true
+ZIP="dist/$APP_NAME-$VERSION.zip"
+rm -f "$ZIP"
+( cd build && ditto -c -k --keepParent "$APP_NAME.app" "../$ZIP" )
+echo "› Updater-ZIP: $ZIP"
+
 # 3) Tag the current commit.
 git tag -f "$TAG"
 git push -f origin "$TAG"
@@ -44,12 +53,12 @@ without Gatekeeper warnings.
 **Requirements:** macOS 13+ on a notched MacBook.
 EOF
 
-# 5) Create (or update) the GitHub release and upload the DMG.
+# 5) Create (or update) the GitHub release and upload the DMG + updater ZIP.
 if gh release view "$TAG" >/dev/null 2>&1; then
-    gh release upload "$TAG" "$DMG" --clobber
+    gh release upload "$TAG" "$DMG" "$ZIP" --clobber
     gh release edit "$TAG" --notes-file "$NOTES" --title "Dynamic Island $TAG"
 else
-    gh release create "$TAG" "$DMG" --title "Dynamic Island $TAG" --notes-file "$NOTES"
+    gh release create "$TAG" "$DMG" "$ZIP" --title "Dynamic Island $TAG" --notes-file "$NOTES"
 fi
 
 rm -f "$NOTES"

@@ -39,6 +39,7 @@ final class AppSettings: ObservableObject {
     @Published var warnThreshold: Double { didSet { persistAndApply() { self.d.set(self.warnThreshold, forKey: "warnThreshold") } } }
     @Published var accent: String { didSet { persistAndApply() { self.d.set(self.accent, forKey: "accent") } } }
     @Published var showMusicControls: Bool { didSet { persistAndApply() { self.d.set(self.showMusicControls, forKey: "showMusicControls") } } }
+    @Published var hasOnboarded: Bool { didSet { persistAndApply() { self.d.set(self.hasOnboarded, forKey: "hasOnboarded") } } }
 
     private init() {
         planMonthlyPrice = (d.object(forKey: "planMonthlyPrice") as? Double) ?? 100
@@ -46,6 +47,7 @@ final class AppSettings: ObservableObject {
         warnThreshold = (d.object(forKey: "warnThreshold") as? Double) ?? 0.8
         accent = d.string(forKey: "accent") ?? "green"
         showMusicControls = (d.object(forKey: "showMusicControls") as? Bool) ?? true
+        hasOnboarded = d.bool(forKey: "hasOnboarded")
         launchAtLogin = FileManager.default.fileExists(atPath: Self.launchAgentPath)
         loading = false
     }

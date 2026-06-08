@@ -24,17 +24,20 @@ struct NotchGeometry {
 
     var expandedHeight: CGFloat { max(musicHeight, claudeHeight) }
 
-    func height(for mode: IslandMode) -> CGFloat {
-        mode == .claude ? claudeHeight : musicHeight
+    /// Extra height the expanded island gains for the "update available" banner.
+    static let updateBannerHeight: CGFloat = 46
+
+    func height(for mode: IslandMode, extra: CGFloat = 0) -> CGFloat {
+        (mode == .claude ? claudeHeight : musicHeight) + extra
     }
 
     /// The full window frame (screen coords, bottom-left origin) for a given state.
     /// The window is sized to *exactly* the visible island so that, when collapsed,
     /// no window covers the dropdown area below — leaving it fully clickable.
-    func windowFrame(expanded: Bool, mode: IslandMode) -> NSRect {
+    func windowFrame(expanded: Bool, mode: IslandMode, extra: CGFloat = 0) -> NSRect {
         let f = screen.frame
         let w = expanded ? expandedWidth : collapsedWidth
-        let h = expanded ? height(for: mode) : collapsedHeight
+        let h = expanded ? height(for: mode, extra: extra) : collapsedHeight
         return NSRect(x: f.midX - w / 2, y: f.maxY - h, width: w, height: h)
     }
 
@@ -144,17 +147,19 @@ final class NotchController {
     private let spotify: SpotifyMonitor
     private let usage: ClaudeUsageMonitor
     private let stats: ClaudeStatsMonitor
+    private let updater: UpdateChecker
     private var cancellables = Set<AnyCancellable>()
     private var collapseWork: DispatchWorkItem?
 
-    init(spotify: SpotifyMonitor, usage: ClaudeUsageMonitor, stats: ClaudeStatsMonitor) {
+    init(spotify: SpotifyMonitor, usage: ClaudeUsageMonitor, stats: ClaudeStatsMonitor, updater: UpdateChecker) {
         self.spotify = spotify
         self.usage = usage
         self.stats = stats
+        self.updater = updater
         self.geo = NotchGeometry.current()
         self.panel = NotchPanel(size: CGSize(width: geo.collapsedWidth, height: geo.collapsedHeight))
 
-        let root = IslandView(spotify: spotify, usage: usage, stats: stats, state: state, geo: geo)
+        let root = IslandView(spotify: spotify, usage: usage, stats: stats, updater: updater, state: state, geo: geo)
         let hosting = NSHostingView(rootView: root)
         hosting.layer?.backgroundColor = .clear
         let container = IslandContainerView(state: state, hosting: hosting)
@@ -162,13 +167,23 @@ final class NotchController {
         panel.setFrame(geo.windowFrame(expanded: false, mode: .music), display: true)
         panel.orderFrontRegardless()
 
-        // Resize the window whenever the island opens/closes or switches mode.
+        // Resize the window whenever the island opens/closes, switches mode, or an
+        // update appears/disappears (the expanded island grows for the banner).
         state.$expanded.removeDuplicates()
             .sink { [weak self] _ in self?.updateWindow() }
             .store(in: &cancellables)
         state.$mode.removeDuplicates()
             .sink { [weak self] _ in self?.updateWindow() }
             .store(in: &cancellables)
+        updater.$available.removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateWindow() }
+            .store(in: &cancellables)
+    }
+
+    /// Extra height for the update banner (only when expanded and an update exists).
+    private var bannerExtra: CGFloat {
+        (state.expanded && updater.available != nil) ? NotchGeometry.updateBannerHeight : 0
     }
 
     /// Set the window frame for the current state. Growing is immediate (the content
@@ -176,7 +191,7 @@ final class NotchController {
     private func updateWindow() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            let target = self.geo.windowFrame(expanded: self.state.expanded, mode: self.state.mode)
+            let target = self.geo.windowFrame(expanded: self.state.expanded, mode: self.state.mode, extra: self.bannerExtra)
             self.collapseWork?.cancel()
             self.collapseWork = nil
 
