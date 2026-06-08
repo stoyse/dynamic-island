@@ -428,7 +428,7 @@
       <a class="h" href="#capture">[01] Capture</a>
       <a class="h" href="#capabilities">[02] Capabilities</a>
       <a class="h" href="#telemetry">[04] Telemetry</a>
-      <a class="get" href="https://github.com/stoyse/dynamic-island/releases/latest">Download ↓</a>
+      <a class="get js-dl" href="https://github.com/stoyse/dynamic-island/releases/latest">Download ↓</a>
     </div>
   </div>
 </nav>
@@ -452,7 +452,7 @@
           <h1><span class="out">THE&nbsp;NOTCH</span><br /><span class="fill">EARNS</span> ITS&nbsp;KEEP.</h1>
           <p class="lede">The iPhone's Dynamic Island, reborn around your MacBook's notch. <b>Live music</b>, an interactive <b>dotted-waveform scrubber</b>, and your <b>real-time Claude usage</b> — wrapped around the notch, expanding on hover. No dock icon. No menu-bar clutter. Just the notch, doing more.</p>
           <div class="cta">
-            <a class="btn solid" href="https://github.com/stoyse/dynamic-island/releases/latest">⤓ DOWNLOAD .DMG</a>
+            <a class="btn solid js-dl" href="https://github.com/stoyse/dynamic-island/releases/latest">⤓ DOWNLOAD .DMG</a>
             <a class="btn line" href="https://github.com/stoyse/dynamic-island">SOURCE ON GITHUB</a>
             <span class="note">// free &amp; open source</span>
           </div>
@@ -610,7 +610,7 @@
           <div class="n">ROUTE A — BINARY</div>
           <h3>Download the build</h3>
           <p>Open the <span class="mono" style="color:var(--signal)">.dmg</span> from Releases and drag <b style="color:var(--fg)">Dynamic Island</b> into Applications. Developer-ID signed and notarized by Apple — no Gatekeeper warnings.</p>
-          <a class="btn solid" style="margin-top:22px" href="https://github.com/stoyse/dynamic-island/releases/latest">⤓ LATEST RELEASE</a>
+          <a class="btn solid js-dl" style="margin-top:22px" href="https://github.com/stoyse/dynamic-island/releases/latest">⤓ LATEST RELEASE</a>
         </div>
         <div class="route rise">
           <div class="n">ROUTE B — SOURCE</div>
@@ -737,6 +737,69 @@
     es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
   }, { threshold: 0.12 });
   document.querySelectorAll('.rise').forEach((el) => io.observe(el));
+
+  // ── direct download "middleman" ──────────────────────────────────────────
+  // Resolve the newest .dmg from the GitHub Releases API and stream it straight
+  // to the browser, so the user never leaves the page or sees GitHub. Falls back
+  // to the Releases page if the API is unreachable / rate-limited.
+  (function () {
+    const REPO = 'stoyse/dynamic-island';
+    const FALLBACK = 'https://github.com/' + REPO + '/releases/latest';
+    let cached = null; // {url, name, version}
+
+    async function resolveLatest() {
+      if (cached) return cached;
+      const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      });
+      if (!r.ok) throw new Error('api ' + r.status);
+      const j = await r.json();
+      const asset = (j.assets || []).find(a => /\.dmg$/i.test(a.name));
+      if (!asset) throw new Error('no dmg asset');
+      cached = { url: asset.browser_download_url, name: asset.name, version: j.tag_name };
+      return cached;
+    }
+
+    function startDownload(url, name) {
+      const a = document.createElement('a');
+      a.href = url;            // github CDN serves Content-Disposition: attachment
+      a.setAttribute('download', name || '');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    document.querySelectorAll('.js-dl').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (btn.dataset.busy) return;
+        const original = btn.innerHTML;
+        btn.dataset.busy = '1';
+        btn.style.pointerEvents = 'none';
+        btn.innerHTML = 'Fetching latest…';
+        try {
+          const { url, name } = await resolveLatest();
+          btn.innerHTML = 'Downloading ↓';
+          startDownload(url, name);
+          setTimeout(() => { btn.innerHTML = original; }, 1600);
+        } catch (err) {
+          // last resort: send them to the releases page
+          window.location.href = FALLBACK;
+          btn.innerHTML = original;
+        } finally {
+          btn.style.pointerEvents = '';
+          delete btn.dataset.busy;
+        }
+      });
+    });
+
+    // warm the cache + show the resolved version on the primary button, if present
+    resolveLatest().then(({ version }) => {
+      document.querySelectorAll('.js-dl[data-show-version]').forEach((b) => {
+        b.innerHTML = b.innerHTML.replace(/\s*·.*$/, '') + ' · ' + version;
+      });
+    }).catch(() => {});
+  })();
 </script>
 </body>
 </html>
