@@ -52,6 +52,15 @@ final class ClaudeUsageMonitor: ObservableObject {
         }
     }
 
+    /// Trigger an immediate poll — re-shows the keychain access dialog if the app
+    /// isn't authorized yet (used by the "connect Claude" tap in the island).
+    func refresh() {
+        queue.async { [weak self] in self?.poll() }
+    }
+
+    /// True once we have a real, authorized reading (token + endpoint OK).
+    var isConnected: Bool { usage.valid }
+
     deinit { timer?.cancel() }
 
     // MARK: Polling

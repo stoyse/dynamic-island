@@ -175,7 +175,10 @@ struct IslandView: View {
                 claudeSummary
                     .frame(width: 158)
                     .contentShape(Rectangle())
-                    .onTapGesture { state.mode = .claude }
+                    .onTapGesture {
+                        if usage.usage.valid { state.mode = .claude }
+                        else { usage.refresh() }   // re-trigger the keychain dialog
+                    }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
@@ -344,29 +347,50 @@ struct IslandView: View {
         }
     }
 
-    private var claudeSummary: some View {
-        HStack(spacing: 10) {
-            usageRing(size: 44, lineWidth: 5, showLabel: true)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 3) {
-                    Text("Claude · \(ringTitle)")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.4))
+    @ViewBuilder private var claudeSummary: some View {
+        if usage.usage.valid {
+            HStack(spacing: 10) {
+                usageRing(size: 44, lineWidth: 5, showLabel: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 3) {
+                        Text("Claude · \(ringTitle)")
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.7))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    Text("\(pct(ringPercent))%")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(usageColor)
+                    Text(resetText(ringReset))
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.white.opacity(0.5))
+                    Text(secondaryUsageText)
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.white.opacity(0.5))
                 }
-                Text("\(pct(ringPercent))%")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(usageColor)
-                Text(resetText(ringReset))
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.white.opacity(0.5))
-                Text(secondaryUsageText)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.white.opacity(0.5))
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            // No authorized reading yet → invite the user to grant keychain access.
+            HStack(spacing: 10) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(accent)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(accent.opacity(0.14)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Connect Claude", "Claude verbinden"))
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(L("Tap, then “Always Allow”", "Tippen, dann „Immer erlauben“"))
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
