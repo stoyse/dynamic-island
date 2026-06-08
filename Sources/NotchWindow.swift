@@ -179,11 +179,16 @@ final class NotchController {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.updateWindow() }
             .store(in: &cancellables)
+        usage.$access.removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateWindow() }
+            .store(in: &cancellables)
     }
 
-    /// Extra height for the update banner (only when expanded and an update exists).
+    /// Extra height for the top banner (update available or a keychain warning).
     private var bannerExtra: CGFloat {
-        (state.expanded && updater.available != nil) ? NotchGeometry.updateBannerHeight : 0
+        let warn = usage.access == .denied || usage.access == .missing
+        return (state.expanded && (warn || updater.available != nil)) ? NotchGeometry.updateBannerHeight : 0
     }
 
     /// Set the window frame for the current state. Growing is immediate (the content

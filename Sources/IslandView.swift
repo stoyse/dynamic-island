@@ -45,9 +45,15 @@ struct IslandView: View {
     private var islandH: CGFloat { (state.expanded ? geo.height(for: state.mode) : geo.collapsedHeight) + bannerExtra }
     private var sideArm: CGFloat { (geo.collapsedWidth - geo.notchWidth) / 2 }
 
-    /// Extra height the expanded island gains for the update banner.
+    /// A keychain warning needs surfacing (access refused or Claude Code missing).
+    private var needsClaudeAccess: Bool {
+        usage.access == .denied || usage.access == .missing
+    }
+    private var hasBanner: Bool { needsClaudeAccess || updater.available != nil }
+
+    /// Extra height the expanded island gains for the top banner.
     private var bannerExtra: CGFloat {
-        (state.expanded && updater.available != nil) ? NotchGeometry.updateBannerHeight : 0
+        (state.expanded && hasBanner) ? NotchGeometry.updateBannerHeight : 0
     }
     private var accent: Color { settings.accentColor }
 
@@ -91,6 +97,7 @@ struct IslandView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: state.expanded)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.mode)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: updater.available)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: usage.access)
         .foregroundStyle(.white)
         .onChange(of: state.expanded) { open in if !open { selectedDay = nil } }
         .onChange(of: state.mode) { m in if m != .claude { selectedDay = nil } }
@@ -107,7 +114,8 @@ struct IslandView: View {
             HStack {
                 usageRing(size: geo.notchHeight - 14, lineWidth: 3, showLabel: false)
                     .overlay(alignment: .topTrailing) {
-                        if updater.available != nil { collapsedUpdateBadge }
+                        if needsClaudeAccess { collapsedWarningBadge }
+                        else if updater.available != nil { collapsedUpdateBadge }
                     }
                 Spacer()
             }
@@ -115,6 +123,21 @@ struct IslandView: View {
             .padding(.leading, 9)
         }
         .frame(width: geo.collapsedWidth, height: geo.notchHeight)
+    }
+
+    /// Orange warning badge on the collapsed ring when Claude access is missing.
+    private var collapsedWarningBadge: some View {
+        Circle()
+            .fill(Color.orange)
+            .frame(width: 9, height: 9)
+            .overlay(Image(systemName: "exclamationmark")
+                .font(.system(size: 6, weight: .black)).foregroundStyle(.black))
+            .scaleEffect(updatePulse ? 1.18 : 0.9)
+            .opacity(updatePulse ? 1 : 0.65)
+            .offset(x: 2, y: -2)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) { updatePulse = true }
+            }
     }
 
     /// Tiny pulsing badge shown on the collapsed ring when an update is available.
@@ -137,7 +160,7 @@ struct IslandView: View {
     private var musicDetail: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geo.notchHeight)   // keep the physical notch clear
-            updateBanner
+            topBanner
             HStack(spacing: 12) {
                 HStack(spacing: 11) {
                     artwork(size: 48)
@@ -185,6 +208,52 @@ struct IslandView: View {
             .frame(maxHeight: .infinity)
         }
         .frame(width: geo.expandedWidth, height: geo.musicHeight + bannerExtra)
+    }
+
+    // MARK: Top banner (expanded) — keychain warning takes priority over updates
+
+    @ViewBuilder private var topBanner: some View {
+        if needsClaudeAccess {
+            keychainWarningBanner
+        } else {
+            updateBanner
+        }
+    }
+
+    private var keychainWarningBanner: some View {
+        let missing = usage.access == .missing
+        return HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(missing ? L("Claude Code not found", "Claude Code nicht gefunden")
+                             : L("Claude usage not connected", "Claude-Usage nicht verbunden"))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(missing ? L("Log in to Claude Code on this Mac", "Auf diesem Mac in Claude Code einloggen")
+                             : L("Allow keychain access to show usage", "Keychain-Zugriff erlauben"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Button(action: { usage.refresh() }) {
+                Text(missing ? L("Recheck", "Erneut") : L("Allow", "Erlauben"))
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(.orange))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: NotchGeometry.updateBannerHeight)
+        .background(
+            LinearGradient(colors: [.orange.opacity(0.22), .orange.opacity(0.06)],
+                           startPoint: .leading, endPoint: .trailing))
+        .overlay(Rectangle().fill(.white.opacity(0.07)).frame(height: 1), alignment: .bottom)
     }
 
     // MARK: Update banner (expanded)
@@ -399,7 +468,7 @@ struct IslandView: View {
     private var claudeDetail: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geo.notchHeight)
-            updateBanner
+            topBanner
             VStack(alignment: .leading, spacing: 9) {
                 HStack(alignment: .top, spacing: 10) {
                     backButton

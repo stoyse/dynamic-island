@@ -7,7 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let updater = UpdateChecker()
     var controller: NotchController?
     lazy var settingsWindow = SettingsWindowController(updater: updater)
-    let onboarding = OnboardingWindowController()
+    lazy var onboarding = OnboardingWindowController(usage: usage)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)   // no Dock icon, no menu bar app

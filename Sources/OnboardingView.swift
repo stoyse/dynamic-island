@@ -25,12 +25,14 @@ private struct ClaudePlan: Identifiable {
 
 struct OnboardingView: View {
     @ObservedObject var settings = AppSettings.shared
+    @ObservedObject var usage: ClaudeUsageMonitor
     var onFinish: () -> Void
 
     @State private var step = 0
     @State private var selectedPlan: Double? = nil
 
-    private let stepCount = 4
+    private let stepCount = 5
+    private let connectStepIndex = 3
     private var accent: Color { settings.accentColor }
 
     var body: some View {
@@ -47,6 +49,7 @@ struct OnboardingView: View {
                     case 0: welcomeStep
                     case 1: planStep
                     case 2: ringStep
+                    case 3: connectStep
                     default: finishStep
                     }
                 }
@@ -282,6 +285,69 @@ struct OnboardingView: View {
 
     // MARK: Step 4 — Finish
 
+    // MARK: Step 4 — Connect Claude (gates progression)
+
+    private var connectStep: some View {
+        VStack(spacing: 0) {
+            stepHeader("key.horizontal.fill",
+                       L("Connect your Claude usage", "Claude-Usage verbinden"),
+                       L("Dynamic Island reads your live limits from Claude Code. macOS asks once — choose “Always Allow”.",
+                         "Dynamic Island liest deine Limits aus Claude Code. macOS fragt einmal — wähle „Immer erlauben“."))
+            Spacer(minLength: 0)
+            connectStatusCard
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 6)
+        .onAppear { usage.refresh() }   // pop the keychain dialog on arrival
+    }
+
+    @ViewBuilder private var connectStatusCard: some View {
+        VStack(spacing: 12) {
+            switch usage.access {
+            case .connected:
+                Image(systemName: "checkmark.seal.fill").font(.system(size: 42)).foregroundStyle(.green)
+                Text(L("Connected", "Verbunden"))
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text(L("Your Claude usage is ready.", "Deine Claude-Usage ist bereit."))
+                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.55))
+            case .missing:
+                Image(systemName: "questionmark.circle.fill").font(.system(size: 42)).foregroundStyle(.orange)
+                Text(L("Claude Code not found", "Claude Code nicht gefunden"))
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text(L("Install and log in to Claude Code on this Mac, then recheck.",
+                       "Installiere Claude Code auf diesem Mac und logge dich ein, dann erneut prüfen."))
+                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                grantButton(L("Recheck", "Erneut prüfen"))
+            default:   // .denied / .unknown
+                Image(systemName: "lock.fill").font(.system(size: 42)).foregroundStyle(.orange)
+                Text(L("Allow access", "Zugriff erlauben"))
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text(L("Click below, then choose “Always Allow” in the macOS dialog.",
+                       "Unten klicken, dann im macOS-Dialog „Immer erlauben“ wählen."))
+                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                grantButton(L("Grant access", "Zugriff erlauben"))
+            }
+        }
+        .frame(maxWidth: 440)
+        .padding(26)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white.opacity(0.04)))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
+    }
+
+    private func grantButton(_ title: String) -> some View {
+        Button(action: { usage.refresh() }) {
+            Text(title)
+                .font(.system(size: 13.5, weight: .semibold)).foregroundStyle(.white)
+                .padding(.horizontal, 22).padding(.vertical, 11)
+                .background(Capsule().fill(accent))
+                .shadow(color: accent.opacity(0.45), radius: 12, y: 5)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+    }
+
     private var finishStep: some View {
         VStack(spacing: 0) {
             stepHeader("paintpalette.fill",
@@ -401,7 +467,9 @@ struct OnboardingView: View {
     }
 
     private var canAdvance: Bool {
-        step != 1 || selectedPlan != nil   // plan step requires a selection
+        if step == 1 { return selectedPlan != nil }        // plan step requires a selection
+        if step == connectStepIndex { return usage.access == .connected }  // must grant keychain
+        return true
     }
 
     private func advance() {
@@ -475,6 +543,9 @@ private struct IslandPreview: View {
 /// Shows the first-run onboarding as a borderless, dark, centered window.
 final class OnboardingWindowController {
     private var window: NSWindow?
+    private let usage: ClaudeUsageMonitor
+
+    init(usage: ClaudeUsageMonitor) { self.usage = usage }
 
     func show() {
         if window == nil {
@@ -494,7 +565,7 @@ final class OnboardingWindowController {
             w.standardWindowButton(.zoomButton)?.isHidden = true
             w.standardWindowButton(.miniaturizeButton)?.isHidden = true
 
-            let root = OnboardingView { [weak self] in self?.close() }
+            let root = OnboardingView(usage: usage) { [weak self] in self?.close() }
             w.contentView = NSHostingView(rootView: root)
             w.center()
             window = w

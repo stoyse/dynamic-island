@@ -12,9 +12,18 @@ import Security
 /// - The OAuth token is read from the macOS Keychain item Claude Code maintains
 ///   ("Claude Code-credentials"). We re-read it each poll so token refreshes by
 ///   Claude Code are picked up automatically.
+/// Whether the app can read Claude Code's keychain credential.
+enum ClaudeAccess: Equatable {
+    case unknown      // not checked yet
+    case connected    // token readable → keychain access granted
+    case denied       // keychain read refused (user denied / not authorized)
+    case missing      // no "Claude Code-credentials" item (Claude Code not logged in here)
+}
+
 final class ClaudeUsageMonitor: ObservableObject {
 
     @Published private(set) var usage: UsageInfo = .empty
+    @Published private(set) var access: ClaudeAccess = .unknown
 
     private var timer: DispatchSourceTimer?
     private let queue = DispatchQueue(label: "ClaudeUsageMonitor.poll", qos: .utility)
@@ -164,14 +173,26 @@ final class ClaudeUsageMonitor: ObservableObject {
             if ProcessInfo.processInfo.environment["DI_DEBUG"] == "1" {
                 FileHandle.standardError.write("DI_KEYCHAIN status=\(status)\n".data(using: .utf8)!)
             }
+            // errSecItemNotFound → Claude Code isn't logged in on this Mac;
+            // anything else (auth failed / user cancelled) → access denied.
+            setAccess(status == errSecItemNotFound ? .missing : .denied)
             return nil
         }
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = obj["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String, !token.isEmpty else {
+            setAccess(.denied)
             return nil
         }
+        setAccess(.connected)
         return token
+    }
+
+    private func setAccess(_ a: ClaudeAccess) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.access != a { self.access = a }
+        }
     }
 
     // MARK: Date parsing
