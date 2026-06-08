@@ -12,10 +12,13 @@ APP="build/$APP_NAME.app"
 ./package.sh
 
 # 2) Resolve version / tag / artifact.
-VERSION="${1:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")}"
-TAG="v$VERSION"
-DMG="dist/$APP_NAME-$VERSION.dmg"
-[ -f "$DMG" ] || { echo "✗ $DMG nicht gefunden"; exit 1; }
+#    The tag may be overridden by the first arg; the DMG is always whatever
+#    package.sh actually produced (avoids version-name mismatches).
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
+TAG="v${1:-$VERSION}"
+DMG="$(ls -t dist/*.dmg 2>/dev/null | head -1)"
+[ -n "$DMG" ] && [ -f "$DMG" ] || { echo "✗ Kein DMG in dist/ gefunden"; exit 1; }
+echo "› Release $TAG mit Artefakt: $DMG"
 
 # 3) Tag the current commit.
 git tag -f "$TAG"
