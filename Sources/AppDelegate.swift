@@ -6,7 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let stats = ClaudeStatsMonitor()
     let updater = UpdateChecker()
     var controller: NotchController?
-    let settingsWindow = SettingsWindowController()
+    lazy var settingsWindow = SettingsWindowController(updater: updater)
     let onboarding = OnboardingWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {

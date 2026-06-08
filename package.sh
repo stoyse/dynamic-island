@@ -46,19 +46,9 @@ mkdir -p "$DIST"
 DMG="$DIST/$APP_NAME-$VERSION.dmg"
 rm -f "$DMG"
 
-# 5) Build the DMG (pretty layout via create-dmg, else a clean hdiutil fallback).
-if command -v create-dmg >/dev/null 2>&1; then
-    echo "› Erzeuge DMG mit create-dmg…"
-    create-dmg \
-        --volname "$VOL_NAME" \
-        --window-pos 200 120 --window-size 540 380 \
-        --icon-size 110 \
-        --icon "$APP_NAME.app" 150 185 \
-        --hide-extension "$APP_NAME.app" \
-        --app-drop-link 390 185 \
-        --no-internet-enable \
-        "$DMG" "$APP" || true   # create-dmg can exit non-zero yet still produce the DMG
-fi
+# 5) Build the styled DMG (custom dark background + drag-to-Applications).
+echo "› Erzeuge gestyltes DMG…"
+./dmg/make-dmg.sh "$APP" "$DMG" "$VOL_NAME" || true
 if [ ! -f "$DMG" ]; then
     echo "› hdiutil-Fallback…"
     STAGE="$(mktemp -d)"
