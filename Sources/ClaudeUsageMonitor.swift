@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Security
 
 /// Publishes the REAL Claude usage from Anthropic's OAuth usage endpoint
 /// (`https://api.anthropic.com/api/oauth/usage`) — the same numbers shown in
@@ -136,20 +137,27 @@ final class ClaudeUsageMonitor: ObservableObject {
 
     // MARK: Keychain
 
-    /// Read Claude Code's OAuth access token from the Keychain via the `security`
-    /// CLI (same access path that already works on this machine, prompt-free).
+    /// Read Claude Code's OAuth access token from the Keychain item it maintains
+    /// ("Claude Code-credentials"). Done in-process via the Security framework so
+    /// the one-time access dialog is correctly attributed to *this* app — clicking
+    /// "Always Allow" then adds Dynamic Island to the item's ACL and all future
+    /// reads are prompt-free (the access path Claude Code's secure store requires).
     private func readOAuthToken() -> String? {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-        proc.arguments = ["find-generic-password", "-s", "Claude Code-credentials", "-w"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = FileHandle.nullDevice
-        do { try proc.run() } catch { return nil }
-        let out = pipe.fileHandleForReading.readDataToEndOfFile()
-        proc.waitUntilExit()
-        guard proc.terminationStatus == 0,
-              let obj = try? JSONSerialization.jsonObject(with: out) as? [String: Any],
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "Claude Code-credentials",
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess, let data = item as? Data else {
+            if ProcessInfo.processInfo.environment["DI_DEBUG"] == "1" {
+                FileHandle.standardError.write("DI_KEYCHAIN status=\(status)\n".data(using: .utf8)!)
+            }
+            return nil
+        }
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = obj["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String, !token.isEmpty else {
             return nil
