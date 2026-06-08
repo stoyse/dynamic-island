@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller = NotchController(spotify: spotify, usage: usage, stats: stats, updater: updater)
 
         // First launch → show the setup screen.
+        if ProcessInfo.processInfo.environment["DI_DEBUG"] == "1" {
+            FileHandle.standardError.write("DI_ONBOARD hasOnboarded=\(AppSettings.shared.hasOnboarded) lang=\(Locale.preferredLanguages.first ?? "?")\n".data(using: .utf8)!)
+        }
         if !AppSettings.shared.hasOnboarded {
             onboarding.show()
         }

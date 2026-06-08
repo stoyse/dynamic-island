@@ -501,6 +501,12 @@ final class OnboardingWindowController {
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+        // Accessory (LSUIElement) apps can't always activate to show a window —
+        // force it on screen the way the notch panel does.
+        window?.orderFrontRegardless()
+        if ProcessInfo.processInfo.environment["DI_DEBUG"] == "1" {
+            FileHandle.standardError.write("DI_ONBOARD show() visible=\(window?.isVisible == true)\n".data(using: .utf8)!)
+        }
     }
 
     private func close() {
