@@ -61,7 +61,17 @@ The progress bar isn't a line — it's a **dotted sound wave**. Each column is a
 
 ---
 
-## ✦ Install
+## ✦ Download
+
+Grab the latest signed & notarized build from the
+**[Releases page](../../releases/latest)** — open the `.dmg` and drag **Dynamic
+Island** into your **Applications** folder. No Gatekeeper warnings; it's
+Developer-ID signed and notarized by Apple.
+
+On first launch, macOS asks to allow **Automation** for Spotify / Google Chrome —
+approve it so playback controls and tap-to-open work.
+
+## ✦ Install from source
 
 ```bash
 ./install.sh
@@ -96,6 +106,30 @@ The ring shows the **actual** 5-hour session utilization pulled live from Anthro
 - Token refreshes from Claude Code are picked up automatically — the token is re-read on every fetch.
 
 ---
+
+## ✦ Building a signed release
+
+Maintainers can produce a Gatekeeper-approved DMG and publish it to GitHub.
+
+**One-time setup**
+
+1. Create a **Developer ID Application** certificate (Xcode → Settings → Accounts →
+   select team → Manage Certificates → **+** → *Developer ID Application*).
+2. Create an **app-specific password** at [appleid.apple.com](https://appleid.apple.com)
+   → *Sign-In and Security* → *App-Specific Passwords*.
+3. Store the notarization credentials in your keychain:
+   ```bash
+   xcrun notarytool store-credentials "DynamicIsland" \
+     --apple-id "julian@vars-development.com" --team-id "NAL95468G3"
+   ```
+4. *(optional, prettier DMG)* `brew install create-dmg`
+
+**Each release**
+
+```bash
+./package.sh          # build → sign → DMG → notarize → staple → verify
+./release.sh 1.0.0    # all of the above, then tag + publish a GitHub release
+```
 
 ## ✦ Architecture
 

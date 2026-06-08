@@ -11,3 +11,6 @@ DerivedData/
 
 # Raw screen recordings (keep local)
 *.mov
+
+# Packaged DMGs
+dist/
