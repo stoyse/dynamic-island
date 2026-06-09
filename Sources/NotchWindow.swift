@@ -43,7 +43,8 @@ struct NotchGeometry {
 
     static func current() -> NotchGeometry {
         let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main ?? NSScreen.screens.first!
-        let notchH: CGFloat = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 32
+        // Use the exact notch height; 38 (typical) only if the inset isn't ready yet.
+        let notchH: CGFloat = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 38
         var notchW: CGFloat = 220
         if let l = screen.auxiliaryTopLeftArea, let r = screen.auxiliaryTopRightArea {
             let w = r.minX - l.maxX
@@ -148,6 +149,7 @@ final class NotchController {
     private let usage: ClaudeUsageMonitor
     private let stats: ClaudeStatsMonitor
     private let updater: UpdateChecker
+    private var hosting: NSHostingView<IslandView>!
     private var cancellables = Set<AnyCancellable>()
     private var collapseWork: DispatchWorkItem?
 
@@ -160,12 +162,18 @@ final class NotchController {
         self.panel = NotchPanel(size: CGSize(width: geo.collapsedWidth, height: geo.collapsedHeight))
 
         let root = IslandView(spotify: spotify, usage: usage, stats: stats, updater: updater, state: state, geo: geo)
-        let hosting = NSHostingView(rootView: root)
+        self.hosting = NSHostingView(rootView: root)
         hosting.layer?.backgroundColor = .clear
         let container = IslandContainerView(state: state, hosting: hosting)
         panel.contentView = container
         panel.setFrame(geo.windowFrame(expanded: false, mode: .music), display: true)
         panel.orderFrontRegardless()
+
+        // safeAreaInsets (the notch height) can be 0 at launch → re-measure shortly
+        // after so the collapsed island matches the real notch instead of the fallback.
+        for delay in [0.4, 1.2, 3.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.reposition() }
+        }
 
         // Resize the window whenever the island opens/closes, switches mode, or an
         // update appears/disappears (the expanded island grows for the banner).
@@ -217,7 +225,17 @@ final class NotchController {
     }
 
     func reposition() {
-        geo = NotchGeometry.current()
+        let newGeo = NotchGeometry.current()
+        let changed = newGeo.notchHeight != geo.notchHeight
+            || newGeo.notchWidth != geo.notchWidth
+            || newGeo.screen != geo.screen
+        geo = newGeo
+        // Rebuild the SwiftUI tree with the new geometry so the island (esp. the
+        // collapsed notch height) actually reflects it — IslandView holds geo by value.
+        if changed {
+            hosting.rootView = IslandView(spotify: spotify, usage: usage, stats: stats,
+                                          updater: updater, state: state, geo: geo)
+        }
         updateWindow()
     }
 }

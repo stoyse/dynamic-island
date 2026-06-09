@@ -61,10 +61,20 @@ final class ClaudeUsageMonitor: ObservableObject {
         }
     }
 
-    /// Trigger an immediate poll — re-shows the keychain access dialog if the app
-    /// isn't authorized yet (used by the "connect Claude" tap in the island).
+    /// Cached access token + its expiry, so we only touch the Keychain when the
+    /// token is actually stale. This stops the macOS access dialog from re-appearing
+    /// on every 5-minute poll (Claude Code can reset the item's ACL on token refresh).
+    private var cachedToken: String?
+    private var cachedExpiry: Date?
+
+    /// Trigger an immediate poll, forcing a fresh Keychain read (re-shows the access
+    /// dialog if needed). Used by the "connect Claude" / "Allow" actions.
     func refresh() {
-        queue.async { [weak self] in self?.poll() }
+        queue.async { [weak self] in
+            self?.cachedToken = nil
+            self?.cachedExpiry = nil
+            self?.poll()
+        }
     }
 
     /// True once we have a real, authorized reading (token + endpoint OK).
@@ -93,7 +103,11 @@ final class ClaudeUsageMonitor: ObservableObject {
             if error != nil { self.publishNote(L("offline", "offline")); return }
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             if code == 429 { self.publishNote(L("usage check throttled", "Limit-Abfrage gedrosselt")); return }
-            if code == 401 || code == 403 { self.publishNote(L("token expired", "Token abgelaufen")); return }
+            if code == 401 || code == 403 {
+                // Token rejected → drop the cache so the next poll reads a fresh one.
+                self.queue.async { self.cachedToken = nil; self.cachedExpiry = nil }
+                self.publishNote(L("token expired", "Token abgelaufen")); return
+            }
             guard code == 200, let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 self.publishNote("\(L("error", "Fehler")) \(code)")
@@ -161,6 +175,12 @@ final class ClaudeUsageMonitor: ObservableObject {
     /// "Always Allow" then adds Dynamic Island to the item's ACL and all future
     /// reads are prompt-free (the access path Claude Code's secure store requires).
     private func readOAuthToken() -> String? {
+        // Reuse the cached token while it's still comfortably valid → no Keychain
+        // access at all, so no repeated access dialog.
+        if let t = cachedToken, let exp = cachedExpiry, exp.timeIntervalSinceNow > 120 {
+            return t
+        }
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
@@ -184,6 +204,12 @@ final class ClaudeUsageMonitor: ObservableObject {
             setAccess(.denied)
             return nil
         }
+
+        // Cache until the token's own expiry (expiresAt is epoch milliseconds);
+        // fall back to 30 min if it's absent. We refresh a couple of minutes early.
+        let expMs = (oauth["expiresAt"] as? Double) ?? (oauth["expiresAt"] as? Int).map(Double.init)
+        cachedToken = token
+        cachedExpiry = expMs.map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date(timeIntervalSinceNow: 1800)
         setAccess(.connected)
         return token
     }
